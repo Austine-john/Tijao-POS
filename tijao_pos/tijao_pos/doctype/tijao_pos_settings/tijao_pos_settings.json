@@ -1,0 +1,196 @@
+{
+ "doctype": "DocType",
+ "name": "Tijao POS Settings",
+ "module": "Tijao POS",
+ "issingle": 1,
+ "custom": 0,
+ "engine": "InnoDB",
+ "editable_grid": 0,
+ "track_changes": 1,
+ "creation": "2026-11-19 20:00:00.000000",
+ "modified": "2026-11-19 20:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "field_order": [
+  "shop_section",
+  "company",
+  "warehouse",
+  "pos_profile",
+  "column_break_shop",
+  "walk_in_customer",
+  "default_supplier",
+  "item_group",
+  "pricing_section",
+  "selling_price_list",
+  "buying_price_list",
+  "column_break_pricing",
+  "cash_mode_of_payment",
+  "mpesa_mode_of_payment",
+  "opening_stock_account",
+  "low_stock_section",
+  "low_stock_bulk_qty",
+  "column_break_low",
+  "low_stock_loose_qty",
+  "receipt_section",
+  "receipt_header",
+  "receipt_footer"
+ ],
+ "fields": [
+  {
+   "fieldname": "shop_section",
+   "fieldtype": "Section Break",
+   "label": "Shop"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Shop Warehouse",
+   "options": "Warehouse",
+   "description": "Where the shop's stock is kept."
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "column_break_shop",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "walk_in_customer",
+   "fieldtype": "Link",
+   "label": "Walk-in Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "default_supplier",
+   "fieldtype": "Link",
+   "label": "Default Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "label": "Item Group for Products",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "pricing_section",
+   "fieldtype": "Section Break",
+   "label": "Prices and Payments"
+  },
+  {
+   "fieldname": "selling_price_list",
+   "fieldtype": "Link",
+   "label": "Selling Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "buying_price_list",
+   "fieldtype": "Link",
+   "label": "Buying Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "column_break_pricing",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "cash_mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Cash Mode of Payment",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "mpesa_mode_of_payment",
+   "fieldtype": "Link",
+   "label": "M-Pesa Mode of Payment",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "opening_stock_account",
+   "fieldtype": "Link",
+   "label": "Opening Stock Account",
+   "options": "Account",
+   "description": "Temporary Opening account used when posting opening stock."
+  },
+  {
+   "fieldname": "low_stock_section",
+   "fieldtype": "Section Break",
+   "label": "Low Stock"
+  },
+  {
+   "fieldname": "low_stock_bulk_qty",
+   "fieldtype": "Float",
+   "label": "Low when below (bulk units)",
+   "default": "1",
+   "description": "For items bought in crates/cartons: warn when fewer than this many crates are left."
+  },
+  {
+   "fieldname": "column_break_low",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "low_stock_loose_qty",
+   "fieldtype": "Float",
+   "label": "Low when below (sale units, no bulk unit)",
+   "default": "6",
+   "description": "For items with no crate/carton unit."
+  },
+  {
+   "fieldname": "receipt_section",
+   "fieldtype": "Section Break",
+   "label": "Receipt"
+  },
+  {
+   "fieldname": "receipt_header",
+   "fieldtype": "Data",
+   "label": "Receipt Header",
+   "description": "Shop name printed on top of the receipt."
+  },
+  {
+   "fieldname": "receipt_footer",
+   "fieldtype": "Small Text",
+   "label": "Receipt Footer",
+   "default": "Asante! Karibu tena."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Tijao Owner",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": []
+}

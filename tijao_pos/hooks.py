@@ -264,3 +264,19 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+# ---------------------------------------------------------------------------
+# Tijao POS
+# ---------------------------------------------------------------------------
+
+# Roles + default settings are created right after `bench install-app`.
+after_install = "tijao_pos.setup.install.after_install"
+after_migrate = "tijao_pos.setup.install.after_migrate"
+
+# Custom fields we add to ERPNext doctypes (never edit core).
+fixtures = [
+	{
+		"dt": "Custom Field",
+		"filters": [["name", "in", ["Sales Invoice-tijao_client_ref"]]],
+	},
+]

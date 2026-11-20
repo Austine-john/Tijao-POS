@@ -5,3 +5,24 @@
 tags
 node_modules
 __pycache__
+# --- Python tooling ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# --- Frontend build output (built from Tijao-POS/frontend; rebuild with `yarn build`) ---
+tijao_pos/public/frontend/
+
+# --- Local secrets / editor junk ---
+.env
+.env.*
+!.env.example
+*.log
+.idea/
+.vscode/
+*~
+~$*
