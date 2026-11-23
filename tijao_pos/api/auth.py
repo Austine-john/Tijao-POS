@@ -23,4 +23,7 @@ def me():
 		"company": settings.company,
 		"currency": settings.currency,
 		"shop_name": settings.receipt_header or settings.company,
+		"receipt_footer": settings.receipt_footer,
+		# Session-bound token the UI must send as X-Frappe-CSRF-Token on every POST.
+		"csrf_token": frappe.sessions.get_csrf_token(),
 	}

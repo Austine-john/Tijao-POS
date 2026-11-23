@@ -8,6 +8,7 @@ import frappe
 from frappe.utils import cint, flt, get_fullname, nowdate
 
 from tijao_pos.services.catalog_service import get_item_units, get_selling_prices, get_stock_qty
+from tijao_pos.services.shift_service import require_open_shift
 from tijao_pos.utils.elevate import stamp_owner, writes_as_system
 from tijao_pos.utils.errors import TijaoError
 from tijao_pos.utils.lines import describe_qty, normalise_sale_lines
@@ -31,6 +32,9 @@ def make_sale(
 	existing = find_by_client_ref(client_ref)
 	if existing:
 		return get_sale(settings, existing, duplicate=True)
+
+	# Every sale belongs to the open cash-drawer shift (no shift -> no selling).
+	shift = require_open_shift()
 
 	mop = mode_of_payment(settings, payment_mode)
 	mpesa_ref = _validate_mpesa_ref(mpesa_ref) if payment_mode_key(settings, mop) == "mpesa" else None
@@ -65,6 +69,7 @@ def make_sale(
 			"selling_price_list": settings.selling_price_list,
 			"posting_date": nowdate(),
 			CLIENT_REF_FIELD: client_ref,
+			"tijao_shift": shift,
 		}
 	)
 	for line in lines:
@@ -155,6 +160,7 @@ def get_sale(settings, invoice: str, duplicate: bool = False) -> dict:
 	return {
 		"invoice": doc.name,
 		"client_ref": doc.get(CLIENT_REF_FIELD),
+		"shift": doc.get("tijao_shift"),
 		"duplicate": duplicate,
 		"status": "voided" if doc.docstatus == 2 else "paid",
 		"posting_date": str(doc.posting_date),

@@ -21,7 +21,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import flt
 from openpyxl import Workbook
 
-from tijao_pos.api import auth, catalog, dashboard, sales, stock
+from tijao_pos.api import auth, catalog, dashboard, sales, shift, stock
 from tijao_pos.services import import_service
 from tijao_pos.setup.install import bootstrap
 from tijao_pos.utils.errors import TijaoError
@@ -160,6 +160,26 @@ class TestTijaoPOSFlow(FrappeTestCase):
 
 	# --- selling -------------------------------------------------------------
 
+	def test_05b_no_shift_no_selling(self):
+		self.as_user(CASHIER_USER)
+		self.assertIsNone(shift.current())
+		with self.assertRaises(TijaoError) as cm:
+			sales.make_sale(items=[{"item_code": COKE, "qty": 1}], payment_mode="cash", client_ref=ref())
+		self.assertIn("No shift is open", str(cm.exception))
+
+	def test_05c_open_shift_and_payout(self):
+		self.as_user(CASHIER_USER)
+		opened = shift.open_shift(opening_float=1000)
+		self.assertEqual(opened["status"], "Open")
+		self.assertTrue(opened["is_mine"])
+		with self.assertRaises(TijaoError):
+			shift.open_shift(opening_float=500)  # one drawer -> one open shift
+		with self.assertRaises(TijaoError):
+			shift.add_payout(amount=50, reason="Other")  # "Other" needs a note
+		res = shift.add_payout(amount=100, reason="Transport", note="Boda to depot")
+		self.assertEqual(res["payouts"][0]["amount"], 100)
+		self.ctx["shift"] = opened["name"]
+
 	def test_06_sell_cash_and_mpesa(self):
 		self.as_user(CASHIER_USER)
 		cash = sales.make_sale(
@@ -266,7 +286,11 @@ class TestTijaoPOSFlow(FrappeTestCase):
 		for call in (
 			lambda: sales.void_sale(invoice=self.ctx["cash"]),
 			lambda: stock.receive_stock(items=[{"item_code": COKE, "bulk_qty": 1}]),
-			lambda: stock.record_stock_count(counts=[{"item_code": COKE, "bulk_qty": 1}]),
+			lambda: stock.approve_stock_count(name="x"),
+			lambda: stock.reject_stock_count(name="x"),
+			lambda: stock.get_buying_prices(),
+			lambda: shift.list_shifts(),
+			lambda: shift.review_shift(name="x"),
 			lambda: dashboard.get_summary(period="today"),
 			lambda: catalog.import_master_data(file_url="/files/x.xlsx"),
 		):
@@ -340,14 +364,90 @@ class TestTijaoPOSFlow(FrappeTestCase):
 
 	# --- counts --------------------------------------------------------------
 
-	def test_16_stock_count(self):
-		self.as_user(OWNER_USER)
-		# COKE is 75 (3 crates + 3). Count finds 3 crates exactly (3 broken bottles).
-		res = stock.record_stock_count(counts=[{"item_code": COKE, "bulk_qty": 3, "loose_qty": 0}])
-		self.assertTrue(res["reconciliation"])
-		self.assertEqual(res["changes"][0]["difference"], -3)
-		self.assertEqual(self.qty(COKE), 72)
+	def test_16_stock_count_needs_owner_approval(self):
+		# COKE is 75 (3 crates + 3). The cashier counts 3 crates exactly (3 broken).
+		self.as_user(CASHIER_USER)
+		with self.assertRaises(TijaoError):
+			stock.save_stock_count(counts=[{"item_code": COKE, "bulk_qty": 3}], reason="Nonsense")
+		saved = stock.save_stock_count(
+			counts=[{"item_code": COKE, "bulk_qty": 3, "loose_qty": 0}], reason="Broken", notes="3 broke"
+		)
+		count = saved["count"]
+		self.assertEqual(count["status"], "Pending")
+		self.assertEqual(count["rows"][0]["difference"], -3)
+		rate = flt(
+			frappe.db.get_value(
+				"Bin", {"item_code": COKE, "warehouse": self.settings.warehouse}, "valuation_rate"
+			)
+		)
+		self.assertAlmostEqual(count["total_value"], round(-3 * rate, 2), places=2)  # valued at current cost
+		self.assertEqual(self.qty(COKE), 75)  # nothing changes until approved
+		with self.assertRaises(frappe.PermissionError):
+			stock.approve_stock_count(name=count["name"])
 
-		same = stock.record_stock_count(counts=[{"item_code": COKE, "bulk_qty": 3}])
-		self.assertIsNone(same["reconciliation"])
-		self.assertIn("Nothing changed", same["message"])
+		# A sale happens between the count and the approval.
+		sales.make_sale(items=[{"item_code": COKE, "qty": 1}], payment_mode="cash", client_ref=ref())
+		self.assertEqual(self.qty(COKE), 74)
+
+		self.as_user(OWNER_USER)
+		pending = stock.list_stock_counts(status="Pending")
+		self.assertIn(count["name"], [c["name"] for c in pending])
+		res = stock.approve_stock_count(name=count["name"], note="ok")
+		self.assertEqual(res["count"]["status"], "Approved")
+		self.assertTrue(res["count"]["applied"])
+		# Counted 72 at count time, 1 sold since -> 71 now.
+		self.assertEqual(self.qty(COKE), 71)
+		with self.assertRaises(TijaoError):
+			stock.approve_stock_count(name=count["name"])
+
+	def test_17_stock_count_reject_and_nothing_to_count(self):
+		self.as_user(CASHIER_USER)
+		same = stock.save_stock_count(
+			counts=[{"item_code": WATER, "loose_qty": self.qty(WATER)}], reason="Routine count"
+		)
+		self.assertIsNone(same["count"])
+		saved = stock.save_stock_count(counts=[{"item_code": WATER, "loose_qty": 1}], reason="Missing")
+		self.as_user(OWNER_USER)
+		res = stock.reject_stock_count(name=saved["count"]["name"], note="Recount please")
+		self.assertEqual(res["count"]["status"], "Rejected")
+		self.assertEqual(self.qty(WATER), 8)
+
+	def test_18_blind_close(self):
+		# Cashier never sees cash totals while the shift is open; the owner does.
+		self.as_user(CASHIER_USER)
+		cur = shift.current()
+		self.assertNotIn("expected_cash", cur)
+		self.assertNotIn("cash_sales", cur)
+		self.as_user(OWNER_USER)
+		live = shift.current()
+		# Cash sales in this shift: test_06 (3x65 + 2x30) + test_16 (1x65). M-Pesa sale was voided.
+		cash = 3 * 65 + 2 * 30 + 65
+		self.assertEqual(live["cash_sales"], cash)
+		self.assertEqual(live["mpesa_sales"], 0)
+		self.assertEqual(live["expected_cash"], 1000 + cash - 100)
+
+		self.as_user(CASHIER_USER)
+		closed = shift.close_shift(counted_cash=1000 + cash - 100 - 20, notes="Short 20?")
+		self.assertEqual(closed["status"], "Closed")
+		self.assertEqual(closed["expected_cash"], 1000 + cash - 100)
+		self.assertEqual(closed["cash_difference"], -20)
+		self.assertEqual(closed["sales_count"], 2)
+		self.assertEqual(closed["voided_count"], 1)
+		self.assertEqual(
+			frappe.db.get_value("Sales Invoice", self.ctx["cash"], "tijao_shift"), self.ctx["shift"]
+		)
+
+		# Shift closed -> till locked again.
+		with self.assertRaises(TijaoError):
+			sales.make_sale(items=[{"item_code": WATER, "qty": 1}], payment_mode="cash", client_ref=ref())
+		with self.assertRaises(frappe.PermissionError):
+			shift.list_shifts()
+
+	def test_19_owner_reviews_shift(self):
+		self.as_user(OWNER_USER)
+		rows = shift.list_shifts()
+		self.assertEqual(rows[0]["name"], self.ctx["shift"])
+		detail = shift.get_shift(name=self.ctx["shift"])
+		self.assertEqual(len(detail["sales"]), 3)  # 2 paid + 1 voided
+		res = shift.review_shift(name=self.ctx["shift"], note="Talked to cashier")
+		self.assertEqual(res["reviewed"], 1)

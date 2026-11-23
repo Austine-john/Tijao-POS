@@ -8,6 +8,13 @@ from frappe.utils import flt
 from tijao_pos.utils.lines import describe_qty, split_units
 
 
+def is_low(qty: float, per_bulk: float, has_bulk: bool, settings) -> bool:
+	"""Low = fewer than N crates (items with a bulk unit) or N loose units (items without)."""
+	if has_bulk:
+		return flt(qty) < flt(settings.low_stock_bulk_qty) * flt(per_bulk)
+	return flt(qty) < flt(settings.low_stock_loose_qty)
+
+
 def item_group_names(item_group: str) -> list[str]:
 	"""The configured item group and all its children."""
 	lft, rgt = frappe.get_cached_value("Item Group", item_group, ["lft", "rgt"])
@@ -155,6 +162,7 @@ def get_products(settings) -> list[dict]:
 				"bulk_qty": split.bulk,
 				"loose_qty": split.loose,
 				"stock_text": describe_qty(qty, u.sale_uom, u.bulk_uom, u.per_bulk),
+				"is_low": is_low(qty, u.per_bulk, bool(u.bulk_uom), settings),
 				"image": images.get(code),
 			}
 		)
