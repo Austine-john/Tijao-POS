@@ -16,6 +16,7 @@ venv/
 
 # --- Frontend build output (built from Tijao-POS/frontend; rebuild with `yarn build`) ---
 tijao_pos/public/frontend/
+tijao_pos/www/pos.html
 
 # --- Local secrets / editor junk ---
 .env

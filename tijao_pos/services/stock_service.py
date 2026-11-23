@@ -9,6 +9,7 @@ from tijao_pos.services.catalog_service import (
 	get_buying_prices_per_bulk,
 	get_item_units,
 	get_stock_qty,
+	is_low,
 	list_item_codes,
 )
 from tijao_pos.utils.elevate import stamp_owner, writes_as_system
@@ -18,12 +19,6 @@ from tijao_pos.utils.lines import describe_qty, normalise_bulk_lines, split_unit
 # ---------------------------------------------------------------------------
 # Levels
 # ---------------------------------------------------------------------------
-
-
-def is_low(qty: float, per_bulk: float, has_bulk: bool, settings) -> bool:
-	if has_bulk:
-		return flt(qty) < flt(settings.low_stock_bulk_qty) * flt(per_bulk)
-	return flt(qty) < flt(settings.low_stock_loose_qty)
 
 
 def get_stock_levels(settings, item_codes: list[str] | None = None) -> list[dict]:
@@ -59,6 +54,11 @@ def get_stock_levels(settings, item_codes: list[str] | None = None) -> list[dict
 	# Low items first, then alphabetical.
 	rows.sort(key=lambda r: (not r["is_low"], (r["item_name"] or "").lower()))
 	return rows
+
+
+def get_buying_prices(settings) -> dict[str, float]:
+	"""``{item_code: cost per bulk unit}`` from the buying price list."""
+	return get_buying_prices_per_bulk(list_item_codes(settings), settings)
 
 
 # ---------------------------------------------------------------------------
@@ -134,61 +134,8 @@ def _append_pr_row(pr, item_code, qty, uom, factor, rate, warehouse):
 
 
 # ---------------------------------------------------------------------------
-# Counts / breakages
+# Counts / breakages: see count_service.py
 # ---------------------------------------------------------------------------
-
-
-@writes_as_system
-def record_stock_count(settings, counts: list[dict]) -> dict:
-	lines = normalise_bulk_lines(counts, what="stock count", allow_zero=True)
-	codes = [line["item_code"] for line in lines]
-	units = _require_items(codes)
-	bins = get_stock_qty(codes, settings.warehouse)
-	list_rates = get_buying_prices_per_bulk(codes, settings)
-
-	changes = []
-	sr_items = []
-	for line in lines:
-		u = units[line["item_code"]]
-		counted = to_sale_units(line["bulk_qty"], line["loose_qty"], u.per_bulk)
-		b = bins.get(u.item_code)
-		current = flt(b.actual_qty) if b else 0
-		if counted == current:
-			continue
-		rate = _valuation_rate(u, b, list_rates)
-		if counted and not rate:
-			raise TijaoError(
-				f"{u.item_name} has no buying price yet. Record a delivery or set a price first."
-			)
-		sr_items.append(
-			{
-				"item_code": u.item_code,
-				"warehouse": settings.warehouse,
-				"qty": counted,
-				"valuation_rate": rate,
-			}
-		)
-		changes.append(
-			{
-				"item_code": u.item_code,
-				"item_name": u.item_name,
-				"before": current,
-				"after": counted,
-				"difference": counted - current,
-				"before_text": describe_qty(current, u.sale_uom, u.bulk_uom, u.per_bulk),
-				"after_text": describe_qty(counted, u.sale_uom, u.bulk_uom, u.per_bulk),
-			}
-		)
-
-	if not sr_items:
-		return {
-			"reconciliation": None,
-			"changes": [],
-			"message": "Nothing changed. The shelf matches the system.",
-		}
-
-	sr = _make_reconciliation(settings, "Stock Reconciliation", sr_items, expense_account=None)
-	return {"reconciliation": sr.name, "changes": changes, "stock": get_stock_levels(settings, codes)}
 
 
 def _valuation_rate(u, b, list_rates: dict) -> float:

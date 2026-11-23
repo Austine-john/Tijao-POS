@@ -1,0 +1,254 @@
+{
+ "doctype": "DocType",
+ "name": "Tijao Shift",
+ "module": "Tijao POS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-11-23 10:00:00.000000",
+ "modified": "2026-11-23 10:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "field_order": [
+  "status",
+  "user",
+  "cashier_name",
+  "column_break_open",
+  "opened_at",
+  "opening_float",
+  "closing_section",
+  "closed_at",
+  "closed_by",
+  "column_break_close",
+  "counted_cash",
+  "notes",
+  "totals_section",
+  "sales_count",
+  "voided_count",
+  "cash_sales",
+  "mpesa_sales",
+  "column_break_totals",
+  "payouts_total",
+  "expected_cash",
+  "cash_difference",
+  "payouts_section",
+  "payouts",
+  "review_section",
+  "reviewed",
+  "reviewed_by",
+  "reviewed_at",
+  "review_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nClosed",
+   "default": "Open",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Opened by",
+   "options": "User",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "cashier_name",
+   "fieldtype": "Data",
+   "label": "Cashier",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_open",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "label": "Opened at",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "opening_float",
+   "fieldtype": "Currency",
+   "label": "Opening float",
+   "description": "Cash in the drawer when the shift started.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closing_section",
+   "fieldtype": "Section Break",
+   "label": "Closing"
+  },
+  {
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Closed at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_by",
+   "fieldtype": "Link",
+   "label": "Closed by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_close",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "counted_cash",
+   "fieldtype": "Currency",
+   "label": "Cash counted",
+   "description": "Cash the cashier counted in the drawer at close.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Cashier notes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals (frozen at close)"
+  },
+  {
+   "fieldname": "sales_count",
+   "fieldtype": "Int",
+   "label": "Sales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "voided_count",
+   "fieldtype": "Int",
+   "label": "Voided sales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cash_sales",
+   "fieldtype": "Currency",
+   "label": "Cash sales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mpesa_sales",
+   "fieldtype": "Currency",
+   "label": "M-Pesa sales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payouts_total",
+   "fieldtype": "Currency",
+   "label": "Pay-outs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_cash",
+   "fieldtype": "Currency",
+   "label": "Expected cash",
+   "description": "Opening float + cash sales \u2212 pay-outs.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cash_difference",
+   "fieldtype": "Currency",
+   "label": "Over / short",
+   "description": "Counted \u2212 expected. Negative = short.",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "payouts_section",
+   "fieldtype": "Section Break",
+   "label": "Pay-outs"
+  },
+  {
+   "fieldname": "payouts",
+   "fieldtype": "Table",
+   "label": "Pay-outs",
+   "options": "Tijao Shift Payout",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_section",
+   "fieldtype": "Section Break",
+   "label": "Owner review"
+  },
+  {
+   "fieldname": "reviewed",
+   "fieldtype": "Check",
+   "label": "Reviewed",
+   "default": "0"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Reviewed at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_note",
+   "fieldtype": "Small Text",
+   "label": "Review note"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": [],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Tijao Owner",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "autoname": "format:SHIFT-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "cashier_name",
+ "track_changes": 1
+}

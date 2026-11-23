@@ -277,6 +277,11 @@ after_migrate = "tijao_pos.setup.install.after_migrate"
 fixtures = [
 	{
 		"dt": "Custom Field",
-		"filters": [["name", "in", ["Sales Invoice-tijao_client_ref"]]],
+		"filters": [["module", "=", "Tijao POS"]],
 	},
+]
+
+# React POS: /pos and every client-side route under it render www/pos.html.
+website_route_rules = [
+	{"from_route": "/pos/<path:app_path>", "to_route": "pos"},
 ]
